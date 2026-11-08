@@ -68,8 +68,8 @@ def test_excel_cree_puis_fusionne_en_conservant_les_notes_perso(sorties, capsys)
         COL_DATE, COL_ENTREPRISE, COL_TITRE, COL_SCORE, COL_POINTS_FORTS, COL_A_DECOUVRIR, COL_VERDICT, COL_LIEN,
         COL_SCORE_INITIAL, COL_AJUSTEMENT, COL_CV_DESIGN, COL_CV_ATS, COL_LINKEDIN, COL_LETTRE, COL_STATUT, COL_NOTES,
     ]
-    assert df.loc[0, COL_CV_DESIGN].endswith("CV_Deniz_OK_secu.pdf")
-    assert df.loc[0, COL_CV_ATS].endswith("CV_Deniz_OK_ATS_secu.pdf")
+    assert df.loc[0, COL_CV_DESIGN].endswith("CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf")
+    assert df.loc[0, COL_CV_ATS].endswith("CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf")
     assert df.loc[0, COL_LINKEDIN] == "Bonjour" and df.loc[0, COL_LETTRE] == "Madame"
 
     df = df.astype({COL_STATUT: object, COL_NOTES: object})

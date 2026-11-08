@@ -56,18 +56,18 @@ ROME_PAR_GROUPE = {
 }
 ROME_PAR_DEFAUT = ["M1801", "M1802", "M1810"]
 
-_REPO_BASE = "https://github.com/Deniz09OK/veille-devsecops-ia/blob/main/cv"
+_REPO_BASE = "https://github.com/devBonkey/veille-devsecops-ia/blob/main/cv"
 CV_PAR_GROUPE = {
     "secu": {
-        "design": f"{_REPO_BASE}/CV_Deniz_OK_secu.pdf",
-        "ats": f"{_REPO_BASE}/CV_Deniz_OK_ATS_secu.pdf",
+        "design": f"{_REPO_BASE}/CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf",
+        "ats": f"{_REPO_BASE}/CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf",
     },
     "cloud-devops": {
-        "design": f"{_REPO_BASE}/CV_Deniz_OK_cloud-devops.pdf",
-        "ats": f"{_REPO_BASE}/CV_Deniz_OK_ATS_cloud-devops.pdf",
+        "design": f"{_REPO_BASE}/CV_Bonkey_FIAGNIGBE_devops.pdf",
+        "ats": f"{_REPO_BASE}/CV_Bonkey_FIAGNIGBE_devops.pdf",
     },
     "infra-sre": {
-        "design": f"{_REPO_BASE}/CV_Deniz_OK_infra-sre.pdf",
-        "ats": f"{_REPO_BASE}/CV_Deniz_OK_ATS_infra-sre.pdf",
+        "design": f"{_REPO_BASE}/CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf",
+        "ats": f"{_REPO_BASE}/CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf",
     },
 }

@@ -84,12 +84,10 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
 ├── .github/workflows/veille.yml    # Pipeline CI/CD (tests → matrix 3 groupes → fusion → email)
 ├── .github/workflows/tests.yml     # Tests + couverture, à chaque push / PR et appelé par veille.yml
 ├── cv/                              # CV par groupe, versionnés dans Git (fichiers statiques)
-│   ├── CV_Deniz_OK_secu.pdf
-│   ├── CV_Deniz_OK_ATS_secu.pdf
-│   ├── CV_Deniz_OK_cloud-devops.pdf
-│   ├── CV_Deniz_OK_ATS_cloud-devops.pdf
-│   ├── CV_Deniz_OK_infra-sre.pdf
-│   └── CV_Deniz_OK_ATS_infra-sre.pdf
+│   ├── CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf
+│   ├── CV_Bonkey_FIAGNIGBE_devops.pdf
+│   ├── CV_Bonkey_FIAGNIGBE_dev.pdf
+│   └── archive/                     # Anciens CV (Deniz), conservés mais non utilisés par l'app
 ├── feedback_candidatures.json       # Retour réel des candidatures, VERSIONNÉ (voir Analyse IA)
 ├── historique_offres_<groupe>.json # Anti-doublons (14 jours), un par groupe — géré par le cache CI
 ├── memoire_ia_<groupe>/            # Mémoire vectorielle ChromaDB, une par groupe — géré par le cache CI
@@ -276,7 +274,7 @@ Ce que les tests ne peuvent pas détecter : un changement de HTML sur HelloWork 
 | Zone géographique | `VILLES_54` / `VILLES_TER_NANCY` / `SIGNAUX_FULL_REMOTE` (`core/filtres.py`) | Nancy et banlieue / 54 / Toul / Lunéville / Pont-à-Mousson / Metz / Thionville / Sarrebourg / Bar-le-Duc / Épinal / télétravail intégral non ambigu |
 | Écoles écartées | `ECOLES_CONCURRENTES` (`core/filtres.py`) | ISCOD, CESI, OpenClassrooms, Sup de Vinci, My Digital School, EPSI |
 | Terme de contrat exigé | `MOTS_ALTERNANCE` (`core/filtres.py`) | alternance, alternant, apprenti, contrat de pro |
-| CV recommandé par groupe | `CV_PAR_GROUPE` (`core/constantes.py`) | liens vers `cv/CV_Deniz_OK_<groupe>[_ATS].pdf` |
+| CV recommandé par groupe | `CV_PAR_GROUPE` (`core/constantes.py`) | secu/infra-sre → `cv/CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf`, cloud-devops → `cv/CV_Bonkey_FIAGNIGBE_devops.pdf` |
 | Seuil de génération de candidature | `SEUIL_CANDIDATURE` (`core/constantes.py`) | 8.0 / 10 |
 | Seuil de similarité mémoire RAG | `SEUIL_DISTANCE_RAG` (`core/constantes.py`) | distance < 1.0 |
 | Seuil de similarité anti-doublons intra-run (avant appel IA) | `SEUIL_SIMILARITE_DEDUP` (`core/utils.py`) | ratio `difflib` ≥ 0.85 |
