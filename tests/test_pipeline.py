@@ -75,7 +75,7 @@ def test_offre_analysee_puis_candidature_et_discord(pipeline_isole):
 
 def test_offre_filtree_est_memorisee_sans_analyse(pipeline_isole):
     pipeline, appels = pipeline_isole
-    pipeline.traiter(OffreCandidate(source="FT", url="https://paris", texte_ia="Alternance DevOps à Paris, hybride"))
+    pipeline.traiter(OffreCandidate(source="FT", url="https://paris", texte_ia="Formation CESI en alternance"))
 
     assert appels["analyses"] == []
     assert pipeline.nb_filtrees == 1
@@ -145,7 +145,9 @@ def test_offres_triees_par_note(pipeline_isole, monkeypatch):
 def test_motif_rejet_donne_la_premiere_raison():
     assert motif_rejet(OffreCandidate(source="s", url="u", texte_ia="")) == "texte_vide"
     assert motif_rejet(OffreCandidate(source="s", url="u", texte_ia="Alternance CESI à Nancy")) == "ecole"
-    assert motif_rejet(OffreCandidate(source="s", url="u", texte_ia="Alternance DevOps à Paris")) == "logistique"
+    # Filtre géographique désactivé temporairement (candidat disponible partout en France) :
+    # une offre sans aucun autre problème passe désormais tous les filtres.
+    assert motif_rejet(OffreCandidate(source="s", url="u", texte_ia="Alternance DevOps à Paris")) is None
     assert motif_rejet(OffreCandidate(source="s", url="u", texte_ia="CDI DevOps à Nancy", verifier_contrat=True)) == "contrat"
     assert motif_rejet(OffreCandidate(source="s", url="u", texte_ia="Métropole du Grand Nancy, alternance")) == "secteur_public"
     assert motif_rejet(OffreCandidate(source="s", url="u", texte_ia=TEXTE_NANCY)) is None
@@ -156,7 +158,7 @@ def test_bilan_suit_chaque_offre_par_source(pipeline_isole, monkeypatch):
     pipeline.historique["https://vue"] = "2026-09-01T00:00:00"
     pipeline.traiter(OffreCandidate(source="FT", url="", texte_ia=TEXTE_NANCY))
     pipeline.traiter(OffreCandidate(source="FT", url="https://vue", texte_ia=TEXTE_NANCY))
-    pipeline.traiter(OffreCandidate(source="FT", url="https://paris", texte_ia="Alternance DevOps à Paris, hybride"))
+    pipeline.traiter(OffreCandidate(source="FT", url="https://paris", texte_ia="Formation CESI en alternance"))
     pipeline.traiter(OffreCandidate(source="FT", url="https://a", texte_ia=TEXTE_NANCY))
     pipeline.traiter(OffreCandidate(source="FT", url="https://b", texte_ia=TEXTE_NANCY + " "))
     pipeline.traiter(OffreCandidate(source="scraping HW 1", site="HelloWork", url="https://c", texte_ia="Autre texte alternance Nancy " * 5))
@@ -164,7 +166,7 @@ def test_bilan_suit_chaque_offre_par_source(pipeline_isole, monkeypatch):
     pipeline.traiter(OffreCandidate(source="FT", url="https://d", texte_ia="Alternance Cloud à Metz. Terraform, AWS, Ansible, Vault. " * 3))
 
     assert dict(pipeline.bilan.sources["FT"]) == {
-        "collectees": 6, "sans_url": 1, "deja_vues": 1, "logistique": 1, "analysees": 1, "doublons": 1, "analyse_echec": 1,
+        "collectees": 6, "sans_url": 1, "deja_vues": 1, "ecole": 1, "analysees": 1, "doublons": 1, "analyse_echec": 1,
     }
     assert dict(pipeline.bilan.sources["HelloWork"]) == {"collectees": 1, "analysees": 1}
 
@@ -181,9 +183,9 @@ def test_quota_atteint_laisse_une_note_dans_le_bilan(pipeline_isole):
 def test_exemples_d_offres_ecartees_limites_par_motif(pipeline_isole):
     pipeline, _ = pipeline_isole
     for i in range(7):
-        pipeline.traiter(OffreCandidate(source="HW", site="HelloWork", url=f"https://paris/{i}", texte_ia=f"Alternance DevOps à Paris, hybride {i}"))
+        pipeline.traiter(OffreCandidate(source="HW", site="HelloWork", url=f"https://paris/{i}", texte_ia=f"Formation CESI en alternance {i}"))
 
-    exemples = pipeline.bilan.exemples["logistique"]
+    exemples = pipeline.bilan.exemples["ecole"]
     assert len(exemples) == 5
-    assert exemples[0] == {"site": "HelloWork", "url": "https://paris/0", "extrait": "Alternance DevOps à Paris, hybride 0"}
-    assert pipeline.bilan.en_dict("g")["exemples_ecartees"]["logistique"] == exemples
+    assert exemples[0] == {"site": "HelloWork", "url": "https://paris/0", "extrait": "Formation CESI en alternance 0"}
+    assert pipeline.bilan.en_dict("g")["exemples_ecartees"]["ecole"] == exemples

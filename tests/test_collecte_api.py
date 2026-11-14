@@ -85,7 +85,7 @@ def test_generer_recherches_lba_par_groupe(monkeypatch):
     assert recherches[1] == ("nationale", {"romes": "M1802"})
 
     monkeypatch.setattr(lba, "GROUPE_ID", "inconnu")
-    assert lba.generer_recherches_lba()[1][1]["romes"] == "M1801,M1802,M1810"
+    assert lba.generer_recherches_lba()[1][1]["romes"] == "M1801,M1802,M1805,M1810"
 
     monkeypatch.setattr(lba, "ROME_PAR_GROUPE", {"vide": []})
     monkeypatch.setattr(lba, "GROUPE_ID", "vide")
@@ -139,7 +139,7 @@ def test_recuperer_lba_filtre_le_remote_et_deduplique(monkeypatch, capsys):
     offres = lba.recuperer_offres_la_bonne_alternance(recherches)
 
     identifiants = [(offre.get("identifier") or {}).get("id") or offre["apply"]["url"] for offre in offres]
-    assert identifiants == ["a", "https://b", "c"]
+    assert identifiants == ["a", "https://b", "c", "d"]
     assert offres[0]["marque"] == "doublon"
     assert faux_get.appels[0][0] == lba.BASE_URL
     assert faux_get.appels[0][1]["headers"] == {"Authorization": "Bearer cle"}
@@ -147,7 +147,7 @@ def test_recuperer_lba_filtre_le_remote_et_deduplique(monkeypatch, capsys):
     sortie = capsys.readouterr().out
     assert "HTTP 403" in sortie and "panne" in sortie
     assert "locale) : 3 offre(s) reçue(s), 2 conservée(s)" in sortie
-    assert "nationale) : 3 offre(s) reçue(s), 2 conservée(s)" in sortie
+    assert "nationale) : 3 offre(s) reçue(s), 3 conservée(s)" in sortie
 
 
 def test_generer_sources_scraping():
@@ -160,8 +160,10 @@ def test_generer_sources_scraping():
     assert "k=Ing%C3%A9nieur+Cloud" in sources[1]["url"]
     assert all(source["aimant_css"] for source in sources)
     urls_hellowork = [source["url"] for source in sources if source["site"].startswith("HelloWork")]
-    assert len(urls_hellowork) == 4
-    assert len(sources) == 4  # APEC retiré
+    assert len(urls_hellowork) == 6
+    assert len(sources) == 6  # APEC retiré
     assert all("c=Alternance" in url and "st=date" in url for url in urls_hellowork)
     assert "mode_travail=full_remote" in sources[2]["url"]
+    assert sources[4]["nom"] == "HelloWork - France entière - DevOps"
+    assert sources[4]["url"] == "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=DevOps&ray=all&c=Alternance&st=date"
     assert generer_sources_scraping([], "Nancy") == []

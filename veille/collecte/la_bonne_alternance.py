@@ -48,8 +48,6 @@ def recuperer_offres_la_bonne_alternance(recherches):
                 continue
             conservees = 0
             for offre in jobs:
-                if nom_recherche == "nationale" and not offre_en_full_remote(offre):
-                    continue
                 identifiant = (offre.get("identifier") or {}).get("id") or (offre.get("apply") or {}).get("url")
                 if identifiant:
                     offres_uniques[identifiant] = offre

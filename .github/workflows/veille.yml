@@ -2,7 +2,7 @@ name: Veille DevSecOps
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 8 * * *'
   workflow_dispatch: {}
 
 concurrency:
@@ -36,7 +36,7 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_APP_PASSWORD }}
           from: Veille DevSecOps <${{ secrets.EMAIL_USERNAME }}>
-          to: ${{ secrets.EMAIL_USERNAME }}
+          to: ${{ secrets.EMAIL_USERNAME }},fiagnigbe.bonkey@gmail.com
           subject: 🚫 Veille DevSecOps - Tests en échec, veille bloquée aujourd'hui
           body: |
             Les tests unitaires ont échoué avant le lancement de la veille du jour.
@@ -57,11 +57,13 @@ jobs:
       matrix:
         include:
           - groupe_id: secu
-            mots_cles: "SecOps,Cloud Security Engineer,Ingénieur SecOps,Architecte Sécurité Cloud,Consultant Sécurité Cloud"
+            mots_cles: "SecOps,Cloud Security Engineer,Ingénieur SecOps,Architecte Sécurité Cloud,Consultant Sécurité Cloud,Analyste SOC"
           - groupe_id: cloud-devops
             mots_cles: "DevSecOps,DevOps,Cloud Builder,Ingénieur Cloud,Ingénieur DevOps"
           - groupe_id: infra-sre
-            mots_cles: "Site Reliability Engineer (SRE),Ingénieur Système et Réseau,Ingénieur de Production IT et Release Engineer"
+            mots_cles: "Site Reliability Engineer (SRE),Ingénieur Système et Réseau,Ingénieur de Production IT et Release Engineer,Administrateur Systèmes,Administrateur Systèmes et Réseaux"
+          - groupe_id: dev
+            mots_cles: "Développeur Web,Développeur Fullstack,Développeur Mobile Flutter,Développeur Mobile,Développeur Logiciel"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -198,10 +200,10 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_APP_PASSWORD }}
           from: Veille DevSecOps <${{ secrets.EMAIL_USERNAME }}>
-          to: ${{ secrets.EMAIL_USERNAME }}
+          to: ${{ secrets.EMAIL_USERNAME }},fiagnigbe.bonkey@gmail.com
           subject: ${{ needs.veille.result == 'success' && '✅ Veille DevSecOps - Run terminé' || '⚠️ Veille DevSecOps - Run terminé avec erreurs' }}
           body: |
-            Résultat des 3 groupes (secu / cloud-devops / infra-sre) : ${{ needs.veille.result }}
+            Résultat des 4 groupes (secu / cloud-devops / infra-sre / dev) : ${{ needs.veille.result }}
             Offres au total dans le Master (cumul) : ${{ steps.stats.outputs.total }}
             Meilleure offre du Master : ${{ steps.stats.outputs.resume }}
 

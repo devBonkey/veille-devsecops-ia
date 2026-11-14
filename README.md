@@ -1,6 +1,6 @@
 # 🛡️ Veille DevSecOps — Agent IA & RAG
 
-Agent autonome qui automatise la recherche, le filtrage et l'évaluation technique des offres d'**alternance** DevSecOps/Cloud/Sécurité — jusqu'à recommander le bon CV et générer une ébauche de candidature. Il combine l'**API officielle France Travail** (OAuth2), le **scraping multi-plateformes** (Playwright) et une **analyse IA collaborative à deux modèles** (Groq : `openai/gpt-oss-120b` + `llama-3.3-70b-versatile`) enrichie d'une **mémoire vectorielle persistante (RAG avec ChromaDB)**. Le pipeline tourne entièrement en autonomie via **GitHub Actions**, sans qu'aucune machine personnelle ait besoin d'être allumée.
+Agent autonome qui automatise la recherche, le filtrage et l'évaluation technique des offres d'**alternance** DevSecOps/Cloud/Sécurité — jusqu'à recommander le bon CV et générer une ébauche de candidature. Il combine l'**API officielle France Travail** (OAuth2), le **scraping multi-plateformes** (Playwright) et une **analyse IA collaborative à deux modèles** (Groq : `openai/gpt-oss-120b` + `qwen/qwen3.8-27b`) enrichie d'une **mémoire vectorielle persistante (RAG avec ChromaDB)**. Le pipeline tourne entièrement en autonomie via **GitHub Actions**, sans qu'aucune machine personnelle ait besoin d'être allumée.
 
 > 🎯 Conçu pour un étudiant en MSc Cybersécurité & Cloud à Epitech Nancy, sans permis de conduire : seules les offres en **alternance**, à **Nancy et alentours** ou en **télétravail intégral non ambigu**, passent les filtres.
 
@@ -10,17 +10,17 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
 
 ### Recherche & collecte
 - 🌍 **API France Travail (Offres d'emploi v2)** : OAuth2 *client credentials*, recherches ciblées Nancy 30 km + France entière par mot-clé, filtrées `natureContrat=E2` (alternance)
-- 🎓 **API La Bonne Alternance** (`api.apprentissage.beta.gouv.fr`) : agrégateur officiel de l'État dédié à l'alternance (France Travail + CFA + entreprises), interrogé par **code ROME** plutôt que mot-clé — une recherche locale (départements 54/57/55/88) et une recherche nationale filtrée aux offres en télétravail intégral (champ `contract.remote` fourni par l'API, plus fiable que la détection texte). Ne renvoie que des offres d'apprentissage/professionnalisation par construction
-- 🔎 **Scraping HelloWork** (alternance, triées par date) — APEC a été retiré (page bloquée, timeout systématique) — chaque plateforme est interrogée automatiquement pour **chaque mot-clé** configuré. Indeed, Welcome to the Jungle et Choose Your Boss ont été retirés : les trois sont protégées par Cloudflare (blocage systématique pour les deux premiers ; blocage de session dès la 2e requête rapprochée, persistant même avec 10s de pause, pour le troisième) — voir historique Git pour le détail de chaque investigation
+- 🎓 **API La Bonne Alternance** (`api.apprentissage.beta.gouv.fr`) : agrégateur officiel de l'État dédié à l'alternance (France Travail + CFA + entreprises), interrogé par **code ROME** plutôt que mot-clé — une recherche locale (départements 54/57/55/88) et une recherche nationale sans restriction de lieu ni de télétravail (candidat disponible partout en France). Ne renvoie que des offres d'apprentissage/professionnalisation par construction
+- 🔎 **Scraping HelloWork** (alternance, triées par date) — 3 recherches par mot-clé : Nancy & alentours (20 km), full remote, et France entière sans restriction de lieu. APEC a été retiré (page bloquée, timeout systématique). Indeed, Welcome to the Jungle et Choose Your Boss ont été retirés : les trois sont protégées par Cloudflare (blocage systématique pour les deux premiers ; blocage de session dès la 2e requête rapprochée, persistant même avec 10s de pause, pour le troisième) — voir historique Git pour le détail de chaque investigation
 - 🩺 **Diagnostic automatique des blocages de scraping** : capture d'écran (une par domaine et par run) en cas d'échec réellement anormal, uploadée en artefact CI (`debug_screenshots/`) — un simple "0 résultat" pour une recherche pointue n'est plus confondu avec un vrai blocage/site cassé
 - 🔑 **Mots-clés paramétrables** : liste centrale (`MOTS_CLES_COMPLETS`) couvrant SecOps, Cloud Security Engineer, DevSecOps, DevOps, SRE, Ingénieur Cloud, etc.
 
 ### Exécution parallèle (matrix GitHub Actions)
-- 🧩 Les mots-clés sont répartis en **3 groupes indépendants** (`secu`, `cloud-devops`, `infra-sre`) qui tournent **en parallèle** sur 3 runners distincts
-- 🔗 Un job **`fusionner`** rassemble les résultats des 3 groupes en un seul **Excel Master**, dédupliqué par lien d'offre
+- 🧩 Les mots-clés sont répartis en **4 groupes indépendants** (`secu`, `cloud-devops`, `infra-sre`, `dev`) qui tournent **en parallèle** sur 4 runners distincts
+- 🔗 Un job **`fusionner`** rassemble les résultats des 4 groupes en un seul **Excel Master**, dédupliqué par lien d'offre
 
 ### Filtrage (avant de consommer du temps IA)
-- 🚪 **Filtre géographique strict** : "Nancy"/54/Meurthe-et-Moselle valide toujours l'offre, tout comme la banlieue de Nancy (Laxou, Maxéville, Tomblaine, Ludres…), Toul, Lunéville, Pont-à-Mousson, Metz, Thionville, Sarrebourg, Bar-le-Duc et Épinal (villes accessibles en TER direct depuis Nancy — candidat sans permis). Toute autre ville n'est acceptée qu'avec un signal **non ambigu** de télétravail intégral (`100% télétravail`, `full remote`...) — le simple mot "télétravail"/"remote" isolé ne suffit plus (il peut apparaître dans la navigation générique d'un site, sans rapport avec l'offre elle-même). Pour France Travail le code postal structuré valide directement la logistique ; pour La Bonne Alternance c'est le champ `contract.remote` de l'API. Les noms de villes et d'écoles sont comparés par **mot entier**, accents ignorés (fini "Metzervisse" qui matche "Metz" ou "Pepsi" qui matche "EPSI")
+- 🚪 **Filtre géographique désactivé temporairement** (`veille/pipeline.py`, candidat disponible partout en France) : toutes les offres passent ce filtre quelle que soit la ville, tant que les autres filtres (école, contrat, secteur public) sont respectés. Le filtre existe toujours dans `core/filtres.py` (`filtre_logistique`) et peut être réactivé en décommentant 2 lignes dans `pipeline.py`. Les noms de villes et d'écoles restent comparés par **mot entier**, accents ignorés (fini "Metzervisse" qui matche "Metz" ou "Pepsi" qui matche "EPSI")
 - 📋 **Filtre type de contrat** : exige la présence explicite d'un terme d'alternance/apprentissage — écarte les CDI/CDD classiques (appliqué au scraping uniquement, les deux API ne renvoient que de l'alternance par construction)
 - 🎓 **Anti-écoles concurrentes** : liste noire (ISCOD, CESI, OpenClassrooms, EPSI, Sup de Vinci…), filtre indépendant appliqué à toutes les sources — un code postal 54 ne permet plus de le contourner
 - 🔁 **Anti-doublons inter-runs** : mémoire de 14 jours par groupe (`historique_offres_<groupe>.json`), avec normalisation des URLs (APEC) et du code postal (comparaison stricte du département, pas une recherche de sous-chaîne)
@@ -28,13 +28,13 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
 
 ### Analyse IA collaborative (deux modèles hébergés chez Groq)
 - 🧠 **Étape 1 — dégrossissage rapide** (Groq, `openai/gpt-oss-120b`) : note technique `/10`, points forts, technos à découvrir, verdict, titre et entreprise
-- 🔬 **Étape 2 — relecture critique** (Groq, `llama-3.3-70b-versatile`) : un second modèle, **d'une autre famille**, relit l'analyse complète du premier et produit la version **finale**. Le score initial et un résumé de l'ajustement (`✅ Confirmé` / `🔧 Ajusté`) sont conservés pour traçabilité
+- 🔬 **Étape 2 — relecture critique** (Groq, `qwen/qwen3.8-27b`) : un second modèle, **d'une autre famille**, relit l'analyse complète du premier et produit la version **finale**. Le score initial et un résumé de l'ajustement (`✅ Confirmé` / `🔧 Ajusté`) sont conservés pour traçabilité
 - 🗃️ **Mémoire vectorielle RAG (ChromaDB)**, une base par groupe : chaque offre est vectorisée et comparée aux évaluations passées, injectée en **référence de calibration uniquement** (jamais recopiée telle quelle)
 - 🔄 **Boucle de feedback réel** (`feedback_candidatures.json`, versionné dans Git) : l'utilisateur y enregistre le résultat réel d'une candidature (`entretien` / `refus` / `sans_reponse` + date), reporté dans les métadonnées ChromaDB au début de chaque run. La calibration RAG (étapes 1 **et** 2) en tient compte pour recalibrer sur des résultats réels plutôt que sur la seule cohérence de l'IA avec elle-même
 - 🏢 **Nom d'entreprise fiabilisé** : pour les offres France Travail, le nom structuré fourni par l'API est utilisé en priorité plutôt que de laisser l'IA le deviner du texte libre
 - 🛡️ **Filet de sécurité anti-format cassé** : validation systématique du format de note (extraction par regex, bornée entre 0 et 10), retry automatique sur erreur de rate-limit (429)
 - 🔁 **Pas d'offre perdue sur panne IA** : si l'analyse échoue (fournisseur indisponible, erreur réseau), l'offre n'est **pas** inscrite dans l'historique anti-doublons et sera retentée au run suivant
-- 🎯 **Quota de sécurité** (`MAX_ANALYSES_PAR_RUN = 15`) : plafonne le nombre d'analyses IA par run et par groupe
+- 🎯 **Quota de sécurité** (`MAX_ANALYSES_PAR_RUN = 35`) : plafonne le nombre d'analyses IA par run et par groupe, partagé entre France Travail, La Bonne Alternance et le scraping (dans cet ordre) — au-delà des limites Groq gratuites (200K tokens/jour) si les 4 groupes tirent chacun sur leur plein quota le même jour ; le filet de sécurité anti-rate-limit (retry) absorbe les dépassements ponctuels
 - ✍️ **Génération de candidature** : pour toute offre notée ≥ 8/10 (score final), un message d'accroche LinkedIn et une ébauche de lettre de motivation sont générés automatiquement, à partir du profil du candidat, des points forts identifiés et du texte de l'offre
 
 ### Recommandation de CV
@@ -81,7 +81,7 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
 ├── pyproject.toml                   # Configuration pytest et couverture (seuil minimal)
 ├── .pre-commit-config.yaml          # Hook pre-push : lance les tests avant chaque git push
 ├── .env                             # Secrets locaux (non versionné)
-├── .github/workflows/veille.yml    # Pipeline CI/CD (tests → matrix 3 groupes → fusion → email)
+├── .github/workflows/veille.yml    # Pipeline CI/CD (tests → matrix 4 groupes → fusion → email)
 ├── .github/workflows/tests.yml     # Tests + couverture, à chaque push / PR et appelé par veille.yml
 ├── cv/                              # CV par groupe, versionnés dans Git (fichiers statiques)
 │   ├── CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf
@@ -112,7 +112,7 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
 ┌─ MOTEUR 1 ─────────┐  ┌─ MOTEUR 2 ─────────────┐  ┌─ MOTEUR 3 ──────────────────────┐
 │ API France Travail │  │ API La Bonne Alternance│  │ Scraping Playwright              │
 │ (OAuth2), par      │  │ par code ROME du       │  │ (HelloWork)                      │
-│ mot-clé du groupe  │  │ groupe (local + remote)│  │                                   │
+│ mot-clé du groupe  │  │ groupe (local + nationale)│  │                                │
 └──────────┬──────────┘  └───────────┬────────────┘  └────────────────┬─────────────────┘
            └──────────────────────────┬─────────────────────────────────┘
                             ▼
@@ -120,7 +120,7 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
                             ▼
      Anti-doublons intra-run (similarité de texte, avant appel IA)
                             ▼
-     Filtre géographique (Nancy/54 ou télétravail intégral non ambigu)
+     Filtre géographique (désactivé temporairement — candidat disponible partout en France)
                             ▼
      Filtre type de contrat (alternance/apprentissage explicite)
                             ▼
@@ -131,7 +131,7 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
         Étape 1 : analyse initiale (Groq, openai/gpt-oss-120b)
                             ▼
         Étape 2 : relecture critique et correction (Groq,
-        llama-3.3-70b-versatile) → score final + traçabilité de l'ajustement
+        qwen/qwen3.8-27b) → score final + traçabilité de l'ajustement
                             ▼
      Score final ≥ 8/10 ? → génération candidature (message LinkedIn
                              + lettre de motivation)
@@ -142,8 +142,8 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
                             ▼
      Mise à jour du tableau de bord Excel du groupe
                             │
-                            ▼ (job "fusionner", après les 3 groupes)
-     Fusion des 3 Excel en un Master dédupliqué
+                            ▼ (job "fusionner", après les 4 groupes)
+     Fusion des 4 Excel en un Master dédupliqué
                             ▼
      E-mail de fin de pipeline (résumé + Excel Master en pièce jointe)
 ```
@@ -232,9 +232,9 @@ python -m veille.fusion resultats-bruts suivi_candidatures_MASTER.xlsx
 
 Le workflow `.github/workflows/veille.yml` :
 1. Lance d'abord les **tests unitaires** (workflow `tests.yml` réutilisé). S'ils échouent : un e-mail d'alerte part avec la sortie complète de `pytest` en pièce jointe, et **la veille du jour est bloquée** (groupes et fusion non exécutés)
-2. Lance les 3 groupes (`secu`, `cloud-devops`, `infra-sre`) **en parallèle**, chacun avec son sous-ensemble de mots-clés
+2. Lance les 4 groupes (`secu`, `cloud-devops`, `infra-sre`, `dev`) **en parallèle**, chacun avec son sous-ensemble de mots-clés
 3. Chaque groupe : applique le feedback réel connu, interroge France Travail + La Bonne Alternance + scrape les 2 plateformes, déduplique, filtre, analyse puis relecture via Groq, associe le CV recommandé, met à jour son Excel et son historique
-4. Une fois les 3 groupes terminés, le job `fusionner` télécharge leurs résultats et produit `suivi_candidatures_MASTER.xlsx` via `python -m veille.fusion` (même code de style Excel et même seuil que les groupes, plus de copie à synchroniser à la main)
+4. Une fois les 4 groupes terminés, le job `fusionner` télécharge leurs résultats et produit `suivi_candidatures_MASTER.xlsx` via `python -m veille.fusion` (même code de style Excel et même seuil que les groupes, plus de copie à synchroniser à la main)
 5. Un e-mail de fin de pipeline est envoyé avec le résumé et l'Excel Master en pièce jointe
 
 Déclenchement : automatique tous les jours (`cron`), ou manuel via l'onglet **Actions → Run workflow**. Après un correctif suite à une alerte de tests, ce lancement manuel permet de rattraper la veille du jour.
@@ -268,9 +268,9 @@ Ce que les tests ne peuvent pas détecter : un changement de HTML sur HelloWork 
 
 | Paramètre | Emplacement | Valeur par défaut |
 |---|---|---|
-| Groupes et répartition des mots-clés | `matrix.include` dans `veille.yml` | 3 groupes (secu / cloud-devops / infra-sre) |
-| Liste complète des mots-clés | `MOTS_CLES_COMPLETS` (`core/constantes.py`) | 13 intitulés (SecOps → Release Engineer) |
-| Codes ROME par groupe (La Bonne Alternance) | `ROME_PAR_GROUPE` (`core/constantes.py`) | secu → M1802, cloud-devops → M1801, infra-sre → M1810 |
+| Groupes et répartition des mots-clés | `matrix.include` dans `veille.yml` | 4 groupes (secu / cloud-devops / infra-sre / dev) |
+| Liste complète des mots-clés | `MOTS_CLES_COMPLETS` (`core/constantes.py`) | 19 intitulés (SecOps → Développeur Logiciel) |
+| Codes ROME par groupe (La Bonne Alternance) | `ROME_PAR_GROUPE` (`core/constantes.py`) | secu → M1802, cloud-devops → M1801, infra-sre → M1810, dev → M1805 |
 | Zone géographique | `VILLES_54` / `VILLES_TER_NANCY` / `SIGNAUX_FULL_REMOTE` (`core/filtres.py`) | Nancy et banlieue / 54 / Toul / Lunéville / Pont-à-Mousson / Metz / Thionville / Sarrebourg / Bar-le-Duc / Épinal / télétravail intégral non ambigu |
 | Écoles écartées | `ECOLES_CONCURRENTES` (`core/filtres.py`) | ISCOD, CESI, OpenClassrooms, Sup de Vinci, My Digital School, EPSI |
 | Terme de contrat exigé | `MOTS_ALTERNANCE` (`core/filtres.py`) | alternance, alternant, apprenti, contrat de pro |
@@ -279,11 +279,11 @@ Ce que les tests ne peuvent pas détecter : un changement de HTML sur HelloWork 
 | Seuil de similarité mémoire RAG | `SEUIL_DISTANCE_RAG` (`core/constantes.py`) | distance < 1.0 |
 | Seuil de similarité anti-doublons intra-run (avant appel IA) | `SEUIL_SIMILARITE_DEDUP` (`core/utils.py`) | ratio `difflib` ≥ 0.85 |
 | Statuts de feedback réel | `feedback_candidatures.json` | `entretien` / `refus` / `sans_reponse` (texte libre accepté) |
-| Quota d'analyses IA par run/groupe | `MAX_ANALYSES_PAR_RUN` (`core/constantes.py`) | 15 |
+| Quota d'analyses IA par run/groupe | `MAX_ANALYSES_PAR_RUN` (`core/constantes.py`) | 35 |
 | Pause entre deux analyses IA | `PAUSE_ENTRE_ANALYSES` (`core/constantes.py`) | 2 s |
 | Durée de mémoire anti-doublons | `JOURS_MEMOIRE` (`core/constantes.py`) | 14 jours |
 | Modèle étape 1 (dégrossissage) | `MODELE_IA` (`core/constantes.py`) | `openai/gpt-oss-120b` (Groq) |
-| Modèle étape 2 (relecture) | `MODELE_IA_VALIDATION` (`core/constantes.py`) | `llama-3.3-70b-versatile` (Groq) |
+| Modèle étape 2 (relecture) | `MODELE_IA_VALIDATION` (`core/constantes.py`) | `qwen/qwen3.8-27b` (Groq) |
 | Fichier Excel | `FICHIER_EXCEL` (`core/config.py`) | `suivi_candidatures_<groupe>.xlsx` |
 
 ## 🛠️ Stack technique
@@ -295,7 +295,7 @@ Ce que les tests ne peuvent pas détecter : un changement de HTML sur HelloWork 
 | **API La Bonne Alternance** | Agrégateur officiel d'offres d'apprentissage, par code ROME |
 | **Playwright** (Chromium headless) | Scraping des plateformes dynamiques |
 | **Groq Cloud** — `openai/gpt-oss-120b` | Analyse IA initiale (rapide, sortie JSON forcée) |
-| **Groq Cloud** — `llama-3.3-70b-versatile` | Relecture critique et correction (modèle d'une autre famille) |
+| **Groq Cloud** — `qwen/qwen3.8-27b` | Relecture critique et correction (modèle d'une autre famille) |
 | **ChromaDB** (persistant, un par groupe, embedding ONNX intégré) | Mémoire vectorielle RAG des verdicts passés |
 | **pandas + openpyxl** | Tableaux de bord Excel (par groupe + Master fusionné) |
 | **python-dotenv** | Gestion des secrets locaux (`.env`) |

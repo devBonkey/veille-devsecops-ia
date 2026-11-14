@@ -32,8 +32,9 @@ def motif_rejet(offre):
         return "texte_vide"
     if not filtre_ecole_concurrente(offre.texte_verif):
         return "ecole"
-    if not (offre.logistique_validee or filtre_logistique(offre.texte_verif)):
-        return "logistique"
+    # Filtre géographique désactivé temporairement : candidat disponible partout en France.
+    # if not (offre.logistique_validee or filtre_logistique(offre.texte_verif)):
+    #     return "logistique"
     if offre.verifier_contrat and not filtre_type_contrat(offre.texte_verif):
         return "contrat"
     if not filtre_secteur_public(offre.texte_verif):

@@ -18,6 +18,12 @@ SOURCES_TEMPLATES = [
         "aimant_css": 'a[href*="/emplois/"]',
         "domaine": "https://www.hellowork.com",
     },
+    {
+        "nom": "HelloWork - France entière",
+        "url_template": "https://www.hellowork.com/fr-fr/emploi/recherche.html?k={mot}&ray=all&c=Alternance&st=date",
+        "aimant_css": 'a[href*="/emplois/"]',
+        "domaine": "https://www.hellowork.com",
+    },
 ]
 
 
