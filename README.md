@@ -272,7 +272,7 @@ Ce que les tests ne peuvent pas détecter : un changement de HTML sur HelloWork 
 | Liste complète des mots-clés | `MOTS_CLES_COMPLETS` (`core/constantes.py`) | 19 intitulés (SecOps → Développeur Logiciel) |
 | Codes ROME par groupe (La Bonne Alternance) | `ROME_PAR_GROUPE` (`core/constantes.py`) | secu → M1802, cloud-devops → M1801, infra-sre → M1810, dev → M1805 |
 | Zone géographique | `VILLES_54` / `VILLES_TER_NANCY` / `SIGNAUX_FULL_REMOTE` (`core/filtres.py`) | Nancy et banlieue / 54 / Toul / Lunéville / Pont-à-Mousson / Metz / Thionville / Sarrebourg / Bar-le-Duc / Épinal / télétravail intégral non ambigu |
-| Écoles écartées | `ECOLES_CONCURRENTES` (`core/filtres.py`) | ISCOD, CESI, OpenClassrooms, Sup de Vinci, My Digital School, EPSI |
+| Écoles écartées | `ECOLES_CONCURRENTES` (`core/filtres.py`) | ISCOD, CESI, OpenClassrooms, Sup de Vinci, My Digital School, EPSI, NEXA Digital School, REDSUP, 2i Academy, Studi CFA, EEMI Paris |
 | Terme de contrat exigé | `MOTS_ALTERNANCE` (`core/filtres.py`) | alternance, alternant, apprenti, contrat de pro |
 | CV recommandé par groupe | `CV_PAR_GROUPE` (`core/constantes.py`) | secu/infra-sre → `cv/CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf`, cloud-devops → `cv/CV_Bonkey_FIAGNIGBE_devops.pdf` |
 | Seuil de génération de candidature | `SEUIL_CANDIDATURE` (`core/constantes.py`) | 8.0 / 10 |

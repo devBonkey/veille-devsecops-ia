@@ -33,7 +33,10 @@ VILLES_54 = [
     "frouard", "pompey", "toul", "lunéville", "pont-à-mousson", "saint-max", "malzéville", "seichamps",
 ]
 
-ECOLES_CONCURRENTES = ["iscod", "iscode", "cesi", "openclassrooms", "sup de vinci", "my digital school", "epsi"]
+ECOLES_CONCURRENTES = [
+    "iscod", "iscode", "cesi", "openclassrooms", "sup de vinci", "my digital school", "mydigitalschool", "epsi",
+    "nexa digital school", "redsup", "2i academy", "studi cfa", "eemi paris",
+]
 
 SIGNAUX_ZONE_ACCEPTEE = (
     ["54000", "meurthe-et-moselle", "meurthe et moselle"]
