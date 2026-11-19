@@ -19,6 +19,8 @@ bilan_run.json
 bilan_run_*.json
 suivi_candidatures.xlsx
 suivi_candidatures_*.xlsx
+offres_brutes.xlsx
+offres_brutes_*.xlsx
 resultats-bruts/
 Historique/
 debug_screenshots/

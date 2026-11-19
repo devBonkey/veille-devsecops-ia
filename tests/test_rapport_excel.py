@@ -6,7 +6,8 @@ from openpyxl import load_workbook
 
 from veille.core.constantes import (
     COL_A_DECOUVRIR, COL_AJUSTEMENT, COL_CV_ATS, COL_CV_DESIGN, COL_DATE, COL_ENTREPRISE, COL_LETTRE, COL_LIEN,
-    COL_LINKEDIN, COL_NOTES, COL_POINTS_FORTS, COL_SCORE, COL_SCORE_INITIAL, COL_STATUT, COL_TITRE, COL_VERDICT,
+    COL_LINKEDIN, COL_NOTES, COL_POINTS_FORTS, COL_SCORE, COL_SCORE_INITIAL, COL_SOURCE, COL_STATUT, COL_TITRE,
+    COL_VERDICT, NOM_FEUILLE_BRUTE,
 )
 from veille.sortie import rapport_excel
 
@@ -30,6 +31,7 @@ def offre(titre, entreprise, note, lien, **extra):
 def sorties(monkeypatch, tmp_path):
     dossier_rapport = tmp_path / "Historique" / "20260912" / "secu"
     monkeypatch.setattr(rapport_excel, "FICHIER_EXCEL", str(tmp_path / "suivi.xlsx"))
+    monkeypatch.setattr(rapport_excel, "FICHIER_EXCEL_BRUT", str(tmp_path / "offres_brutes.xlsx"))
     monkeypatch.setattr(rapport_excel, "CHEMIN_ARCHIVAGE", str(dossier_rapport))
     monkeypatch.setattr(rapport_excel, "FICHIER_RAPPORT", str(dossier_rapport / "rapport.md"))
     monkeypatch.setattr(rapport_excel, "GROUPE_ID", "secu")
@@ -75,7 +77,7 @@ def test_excel_cree_puis_fusionne_en_conservant_les_notes_perso(sorties, capsys)
     df = df.astype({COL_STATUT: object, COL_NOTES: object})
     df.loc[0, COL_STATUT] = "Postulé"
     df.loc[0, COL_NOTES] = "Relancer lundi"
-    df.to_excel(chemin, index=False)
+    df.to_excel(chemin, index=False, sheet_name=rapport_excel.NOM_FEUILLE)
 
     rapport_excel.generer_excel([offre("DevSecOps", "ACME", "9/10", "https://a"), offre("SecOps", "Globex", "6/10", "https://b")])
 
@@ -93,7 +95,7 @@ def test_excel_migre_l_ancienne_colonne_et_revalide(sorties, capsys):
         {COL_ENTREPRISE: "CESI", COL_TITRE: "Alternance", COL_SCORE: "8/10", COL_VERDICT: "ok", COL_LIEN: "https://ecole", "Score Initial (llama)": "7/10"},
         {COL_ENTREPRISE: "ACME", COL_TITRE: "SecOps", COL_SCORE: "8/10", COL_VERDICT: "ok", COL_LIEN: "https://ok", "Score Initial (llama)": "7/10"},
     ])
-    ancien.to_excel(rapport_excel.FICHIER_EXCEL, index=False)
+    ancien.to_excel(rapport_excel.FICHIER_EXCEL, index=False, sheet_name=rapport_excel.NOM_FEUILLE)
 
     rapport_excel.generer_excel([])
 
@@ -130,3 +132,40 @@ def test_ligne_excel_valeurs_par_defaut():
     assert ligne[COL_ENTREPRISE] == "Non précisé" and ligne[COL_TITRE] == "Poste Inconnu"
     assert ligne[COL_SCORE] == "5/10" and ligne[COL_LIEN] == "Aucun"
     assert ligne[COL_CV_DESIGN] == "" and ligne[COL_STATUT] == "" and ligne[COL_DATE] == "12/09/2026"
+
+
+def ligne_brute(source, entreprise, titre, lien):
+    return {COL_DATE: "12/09/2026", COL_SOURCE: source, COL_ENTREPRISE: entreprise, COL_TITRE: titre, COL_LIEN: lien}
+
+
+def test_fichiers_suivi_et_brut_sont_bien_separes(sorties):
+    rapport_excel.generer_excel_brut([ligne_brute("HelloWork", "Initech", "DevOps", "https://brut")])
+    rapport_excel.generer_excel([offre("DevSecOps", "ACME", "9/10", "https://a")])
+
+    assert rapport_excel.FICHIER_EXCEL != rapport_excel.FICHIER_EXCEL_BRUT
+    assert list(pd.read_excel(rapport_excel.FICHIER_EXCEL, sheet_name=rapport_excel.NOM_FEUILLE)[COL_LIEN]) == ["https://a"]
+    assert list(pd.read_excel(rapport_excel.FICHIER_EXCEL_BRUT, sheet_name=NOM_FEUILLE_BRUTE)[COL_LIEN]) == ["https://brut"]
+
+    with pd.ExcelFile(rapport_excel.FICHIER_EXCEL) as fichier:
+        assert fichier.sheet_names == [rapport_excel.NOM_FEUILLE]
+    with pd.ExcelFile(rapport_excel.FICHIER_EXCEL_BRUT) as fichier:
+        assert fichier.sheet_names == [NOM_FEUILLE_BRUTE]
+
+
+def test_generer_excel_brut_ne_touche_pas_au_fichier_suivi(sorties):
+    rapport_excel.generer_excel([offre("DevSecOps", "ACME", "9/10", "https://a")])
+    rapport_excel.generer_excel_brut([ligne_brute("HelloWork", "Initech", "DevOps", "https://brut")])
+
+    assert list(pd.read_excel(rapport_excel.FICHIER_EXCEL, sheet_name=rapport_excel.NOM_FEUILLE)[COL_LIEN]) == ["https://a"]
+    assert list(pd.read_excel(rapport_excel.FICHIER_EXCEL_BRUT, sheet_name=NOM_FEUILLE_BRUTE)[COL_LIEN]) == ["https://brut"]
+
+
+def test_generer_excel_brut_dedupliquee_par_lien(sorties):
+    rapport_excel.generer_excel_brut([ligne_brute("HelloWork", "Initech", "DevOps", "https://brut")])
+    rapport_excel.generer_excel_brut([
+        ligne_brute("HelloWork", "Initech", "DevOps", "https://brut"),
+        ligne_brute("France Travail", "ACME", "SecOps", "https://brut2"),
+    ])
+
+    df = pd.read_excel(rapport_excel.FICHIER_EXCEL_BRUT, sheet_name=NOM_FEUILLE_BRUTE)
+    assert list(df[COL_LIEN]) == ["https://brut", "https://brut2"]

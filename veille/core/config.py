@@ -30,6 +30,7 @@ def _nom_par_groupe(base, extension=""):
 
 FICHIER_HISTORIQUE = _nom_par_groupe("historique_offres", ".json")
 FICHIER_EXCEL = _nom_par_groupe("suivi_candidatures", ".xlsx")
+FICHIER_EXCEL_BRUT = _nom_par_groupe("offres_brutes", ".xlsx")
 FICHIER_BILAN = _nom_par_groupe("bilan_run", ".json")
 CHEMIN_MEMOIRE_IA = _nom_par_groupe("./memoire_ia")
 

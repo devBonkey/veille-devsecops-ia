@@ -17,6 +17,7 @@ class OffreCandidate:
     texte_ia: str
     texte_verif: str = ""
     nom_entreprise: str = ""
+    titre: str = ""
     site: str = ""
     logistique_validee: bool = False
     verifier_contrat: bool = False

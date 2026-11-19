@@ -10,9 +10,10 @@ from .core.constantes import MOTS_CLES_FT_PAR_GROUPE, USER_AGENT
 from .core.filtres import code_postal_accepte
 from .core.historique import charger_historique, ecrire_historique
 from .core.utils import activer_console_utf8, normaliser_url_offre
+from .collecte_brute import collecter_lignes_brutes
 from .ia.analyse_ia import appliquer_feedback_reel
 from .pipeline import OffreCandidate, Pipeline
-from .sortie.rapport_excel import generer_excel, generer_rapport_markdown
+from .sortie.rapport_excel import generer_excel, generer_excel_brut, generer_rapport_markdown
 
 
 def offres_france_travail():
@@ -27,6 +28,7 @@ def offres_france_travail():
             texte_ia=texte,
             texte_verif=f"{texte} {lieu.get('libelle') or ''} {entreprise}",
             nom_entreprise=entreprise,
+            titre=offre.get("intitule") or "",
             logistique_validee=code_postal_accepte(lieu.get("codePostal")),
         )
 
@@ -45,6 +47,7 @@ def offres_la_bonne_alternance():
             texte_ia=texte_ia,
             texte_verif=f"{texte_ia} {adresse} {entreprise}",
             nom_entreprise=entreprise,
+            titre=contenu.get("title") or "",
             logistique_validee=offre_en_full_remote(offre),
         )
 
@@ -104,6 +107,15 @@ def executer():
         f"🎉 Terminé pour le groupe {GROUPE_ID} : {pipeline.nb_analyses} analyse(s) IA, "
         f"{len(offres_triees)} offre(s) retenue(s), {pipeline.nb_filtrees} écartée(s) par les filtres."
     )
+
+
+def executer_brut():
+    activer_console_utf8()
+    print(f"🚀 Démarrage (collecte sans IA) — Groupe : {GROUPE_ID}...")
+    historique = charger_historique()
+    lignes = collecter_lignes_brutes(historique)
+    generer_excel_brut(lignes)
+    print(f"✅ {len(lignes)} offre(s) brute(s) ajoutée(s)/à jour.")
 
 
 if __name__ == "__main__":

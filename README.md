@@ -52,6 +52,12 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
 - 📁 **Rapports Markdown quotidiens**, archivés par jour et par groupe
 - 🔔 **Alertes Discord en temps réel** dès qu'une offre passe tous les filtres
 - 📧 **E-mail de fin de pipeline** (Gmail SMTP) : résumé chiffré (nombre d'offres, meilleure offre du jour), lien vers le run, Excel Master en pièce jointe — envoyé que le run réussisse ou échoue
+- 📄 **Fichier `offres_brutes_<groupe>.xlsx`** : second fichier Excel, distinct de `suivi_candidatures_<groupe>.xlsx`, rempli par un job de collecte indépendant (sans IA, voir plus bas) — toutes les offres qui passent les filtres non-IA (école, contrat, secteur public), avec titre/entreprise/lien quand disponibles, sans score ni analyse. Permet de voir plus d'offres que le quota IA quotidien ne permet d'analyser
+
+### Collecte sans IA, plus fréquente (`veille_collecte_rapide.py`)
+- 🔁 **Job CI indépendant** (`.github/workflows/collecte-brute.yml`), plusieurs fois par jour : collecte France Travail + La Bonne Alternance + HelloWork comme le run principal, mais **sans jamais appeler Groq** — alimente uniquement `offres_brutes_<groupe>.xlsx`, un fichier séparé de `suivi_candidatures_<groupe>.xlsx` pour éviter tout risque d'écrasement entre les deux jobs
+- 🚫 **N'écrit jamais dans l'historique anti-doublons** (`historique_offres_<groupe>.json`), il le lit seulement : les offres qu'il trouve restent "nouvelles" pour le run IA du lendemain, qui continue de toutes les analyser normalement
+- 🧮 **Dédupliqué par lien** à chaque passage, comme `suivi_candidatures_<groupe>.xlsx`
 
 ### Automatisation (CI/CD)
 - ⏰ **GitHub Actions** : exécution quotidienne programmée (`cron`) + déclenchement manuel (`workflow_dispatch`)
@@ -67,22 +73,25 @@ Agent autonome qui automatise la recherche, le filtrage et l'évaluation techniq
 
 ```
 .
-├── veille_devsecops.py             # Point d'entrée (appelle veille.main.executer)
+├── veille_devsecops.py             # Point d'entrée du run IA quotidien (appelle veille.main.executer)
+├── veille_collecte_rapide.py       # Point d'entrée de la collecte sans IA (appelle veille.main.executer_brut)
 ├── veille/                          # Package principal
-│   ├── main.py                      #   Générateurs d'offres par source + executer()
+│   ├── main.py                      #   Générateurs d'offres par source + executer() + executer_brut()
+│   ├── collecte_brute.py            #   Collecte + filtres non-IA, sans Groq, sans écrire l'historique
 │   ├── pipeline.py                  #   OffreCandidate + Pipeline (filtres, dédup, IA, Discord) commun à toutes les sources
 │   ├── fusion.py                    #   Fusion des Excel de groupe en Master (python -m veille.fusion)
 │   ├── core/                        #   constantes (sans effet de bord), config (env + clients à la demande), filtres, historique, utils, feedback
 │   ├── collecte/                    #   France Travail, La Bonne Alternance, scraping Playwright
 │   ├── ia/                          #   Analyse IA collaborative (Groq, deux modèles) + RAG
-│   └── sortie/                      #   Rapport Markdown, Excel (+ excel_style), notifications Discord
+│   └── sortie/                      #   Rapport Markdown, Excel (Suivi dans suivi_candidatures_*.xlsx + Offres brutes dans offres_brutes_*.xlsx) + excel_style, notifications Discord
 ├── tests/                           # Tests unitaires pytest (tests/fixtures : pages HTML locales pour le scraping)
 ├── requirements.txt                 # Dépendances d'exécution (requirements-dev.txt pour les tests)
 ├── pyproject.toml                   # Configuration pytest et couverture (seuil minimal)
 ├── .pre-commit-config.yaml          # Hook pre-push : lance les tests avant chaque git push
 ├── .env                             # Secrets locaux (non versionné)
-├── .github/workflows/veille.yml    # Pipeline CI/CD (tests → matrix 4 groupes → fusion → email)
-├── .github/workflows/tests.yml     # Tests + couverture, à chaque push / PR et appelé par veille.yml
+├── .github/workflows/veille.yml           # Pipeline CI/CD IA quotidien (tests → matrix 4 groupes → fusion → email)
+├── .github/workflows/collecte-brute.yml  # Pipeline CI/CD collecte sans IA, plusieurs fois par jour (tests → matrix 4 groupes)
+├── .github/workflows/tests.yml     # Tests + couverture, à chaque push / PR et appelé par les 2 workflows ci-dessus
 ├── cv/                              # CV par groupe, versionnés dans Git (fichiers statiques)
 │   ├── CV_Bonkey_FIAGNIGBE_admin-systeme-cyber.pdf
 │   ├── CV_Bonkey_FIAGNIGBE_devops.pdf
@@ -214,6 +223,14 @@ GROUPE_ID=secu MOTS_CLES_GROUPE="SecOps,Cloud Security Engineer" python veille_d
 
 Sans `GROUPE_ID`/`MOTS_CLES_GROUPE`, le script traite l'intégralité de `MOTS_CLES_COMPLETS` sous l'identifiant `default`.
 
+### Collecte sans IA (fichier `offres_brutes_<groupe>.xlsx` uniquement)
+
+```bash
+GROUPE_ID=secu MOTS_CLES_GROUPE="SecOps,Cloud Security Engineer" python veille_collecte_rapide.py
+```
+
+Ne nécessite pas `GROQ_API_KEY`. N'écrit jamais dans `historique_offres_<groupe>.json` — sans effet sur le run IA suivant.
+
 ### Enregistrer le résultat réel d'une candidature
 
 ```bash
@@ -284,7 +301,8 @@ Ce que les tests ne peuvent pas détecter : un changement de HTML sur HelloWork 
 | Durée de mémoire anti-doublons | `JOURS_MEMOIRE` (`core/constantes.py`) | 14 jours |
 | Modèle étape 1 (dégrossissage) | `MODELE_IA` (`core/constantes.py`) | `openai/gpt-oss-120b` (Groq) |
 | Modèle étape 2 (relecture) | `MODELE_IA_VALIDATION` (`core/constantes.py`) | `qwen/qwen3.8-27b` (Groq) |
-| Fichier Excel | `FICHIER_EXCEL` (`core/config.py`) | `suivi_candidatures_<groupe>.xlsx` |
+| Fichier Excel (run IA) | `FICHIER_EXCEL` (`core/config.py`) | `suivi_candidatures_<groupe>.xlsx` |
+| Fichier Excel (collecte sans IA) | `FICHIER_EXCEL_BRUT` (`core/config.py`) | `offres_brutes_<groupe>.xlsx` |
 
 ## 🛠️ Stack technique
 
